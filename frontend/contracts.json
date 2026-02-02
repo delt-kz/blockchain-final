@@ -1,0 +1,11 @@
+{
+  "network": "sepolia",
+  "rewardToken": {
+    "address": "0x07ECfa40d0F9D58957781B5f8Fe9A485EeeD1e43",
+    "artifactPath": "artifacts/contracts/RewardToken.sol/RewardToken.json"
+  },
+  "crowdfunding": {
+    "address": "0x3Fd0A0D2818C362428F3fB72db5ffCF29ad1577e",
+    "artifactPath": "artifacts/contracts/CharityCrowdfunding.sol/CharityCrowdfunding.json"
+  }
+}
