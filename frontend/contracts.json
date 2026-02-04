@@ -1,5 +1,6 @@
 {
   "network": "sepolia",
+  "chainId": 11155111,
   "rewardToken": {
     "address": "0x07ECfa40d0F9D58957781B5f8Fe9A485EeeD1e43",
     "artifactPath": "artifacts/contracts/RewardToken.sol/RewardToken.json"

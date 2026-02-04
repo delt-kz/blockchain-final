@@ -19,4 +19,12 @@
 # Hardhat coverage reports
 /coverage
 
+# Contract artifacts in root
+CharityCrowdfunding.json
+RewardToken.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
 .env
