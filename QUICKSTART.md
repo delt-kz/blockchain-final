@@ -1,18 +1,18 @@
 ## Quick Start
-##!!This is not the part of documentation. Its js fast guide for developers
+##!!This is not the part of documentation. It's just a fast guide for developers
 
 ## Prerequisites
 - Node.js (v18+)
 - MetaMask browser extension
 
-## Run Everything (Backend + Frontend)
+## Run Everything (Local Node + Contracts + Frontend)
 
 ```bash
 npm install && npm start
 ```
 
 That's it! This single command will:
-1. Install dependencies
+1. Install dependencies (first time only)
 2. Start Hardhat local blockchain
 3. Deploy smart contracts
 4. Configure frontend with contract addresses
