@@ -2,7 +2,7 @@ The project is a Decentralized Charity Platform. Users create campaigns for soci
 
 Decentralized Charity Platform (Crowdfunding)
 Technical Documentation University Final Project
-Students: Tulegenov Alimzhan , Abdygalym Khamza , Sarsenbek Erkebulan
+Students: Tulegenov Alimzhan , Abdygalym Khamza , Sarsenbek Yerrkebulan
 
 Supervisor: Course: Blockchain Systems Institution: AITU University Date: February 7, 2026
 
@@ -153,7 +153,7 @@ Requests account access with eth_requestAccounts .
 Creates an Ethers BrowserProvider and Signer .
 Validates network against frontend/contracts.json .
 Disables actions if the user is on the wrong chain.
-
+ 
 Listens to:
 accountsChanged to refresh balances and contracts.
 chainChanged to re-check network and reload data.
