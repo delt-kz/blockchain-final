@@ -33,6 +33,36 @@ Press `Ctrl+C` to stop all servers.
 
 ---
 
+## Sepolia Quick Start (Testnet)
+
+Use this mode for the official test network demo (no local node).
+
+```bash
+# 1) Deploy to Sepolia
+npm run deploy:sepolia
+
+# 2) Update frontend/contracts.json with the printed addresses
+
+# 3) Serve the frontend
+npm run start:sepolia
+```
+
+Important:
+- Do NOT use `npm start` for Sepolia (it launches a local Hardhat node).
+- You need Sepolia test ETH in MetaMask to send transactions.
+
+## Get Sepolia Test ETH (Faucet)
+
+Use one of these faucets to get test ETH:
+
+```
+https://www.alchemy.com/faucets          (choose Ethereum Sepolia)
+https://faucets.chain.link/sepolia       (Chainlink)
+https://faucet.quicknode.com/ethereum/sepolia
+```
+
+---
+
 ## Manual Commands (Optional)
 
 If you prefer to run services separately:

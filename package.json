@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node start.js",
+    "start:sepolia": "npx http-server frontend -p 8000",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network sepolia",
     "test": "hardhat test"
   },
   "keywords": [],

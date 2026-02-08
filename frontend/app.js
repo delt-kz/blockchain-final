@@ -41,6 +41,7 @@ const state = {
 
 const elements = {
   connectBtn: document.getElementById("connectBtn"),
+  switchNetworkBtn: document.getElementById("switchNetworkBtn"),
   createForm: document.getElementById("createForm"),
   refreshBtn: document.getElementById("refreshBtn"),
   titleInput: document.getElementById("titleInput"),
@@ -125,6 +126,13 @@ function updateNetworkCopy() {
     `for every contribution. Built for ${expected}.`;
 }
 
+function updateConnectButton() {
+  if (!elements.connectBtn) return;
+  elements.connectBtn.textContent = state.account
+    ? "Change Account"
+    : "Connect MetaMask";
+}
+
 function isSupportedNetwork(chainId) {
   if (!state.config?.chainId) return false;
   return Number(chainId) === Number(state.config.chainId);
@@ -138,6 +146,7 @@ async function connectWallet() {
     if (accounts.length) {
       state.account = accounts[0];
       state.signer = await state.provider.getSigner();
+      updateConnectButton();
       await refreshNetwork();
       await hydrateContracts();
       await refreshWallet();
@@ -148,6 +157,49 @@ async function connectWallet() {
     }
   } catch (error) {
     handleError(error, "Connection rejected.");
+  }
+}
+
+async function requestAccountSwitch() {
+  try {
+    await window.ethereum.request({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+    await connectWallet();
+  } catch (error) {
+    handleError(error, "Account switch cancelled.");
+  }
+}
+
+async function handleConnectClick() {
+  if (!state.account) {
+    await connectWallet();
+    return;
+  }
+  await requestAccountSwitch();
+}
+
+async function switchNetwork() {
+  if (!state.config?.chainId) {
+    setStatus("No network configured in contracts.json.", "warning");
+    return;
+  }
+  const chainIdHex = `0x${Number(state.config.chainId).toString(16)}`;
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chainIdHex }],
+    });
+  } catch (error) {
+    if (error?.code === 4902) {
+      setStatus(
+        `Please add ${getExpectedNetworkLabel()} to MetaMask manually.`,
+        "warning"
+      );
+      return;
+    }
+    handleError(error, "Network switch failed.");
   }
 }
 
@@ -415,6 +467,7 @@ async function init() {
     updateNetworkCopy();
     await refreshNetwork();
     await hydrateContracts();
+    updateConnectButton();
 
     const accounts = await window.ethereum.request({
       method: "eth_accounts",
@@ -422,18 +475,21 @@ async function init() {
     if (accounts.length) {
       state.account = accounts[0];
       state.signer = await state.provider.getSigner();
+      updateConnectButton();
       await refreshWallet();
     }
 
     await loadCampaigns();
 
-    elements.connectBtn.addEventListener("click", connectWallet);
+    elements.connectBtn.addEventListener("click", handleConnectClick);
+    elements.switchNetworkBtn?.addEventListener("click", switchNetwork);
     elements.createForm.addEventListener("submit", createCampaign);
     elements.refreshBtn.addEventListener("click", loadCampaigns);
 
     window.ethereum.on("accountsChanged", async (accounts) => {
       state.account = accounts[0] || null;
       state.signer = state.account ? await state.provider.getSigner() : null;
+      updateConnectButton();
       await hydrateContracts();
       await refreshWallet();
       await loadCampaigns();
