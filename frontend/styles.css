@@ -78,6 +78,13 @@ body {
   gap: 16px;
 }
 
+.wallet-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .wallet-header h2 {
   margin: 0;
   font-size: 1.3rem;
@@ -294,6 +301,11 @@ body {
   .wallet-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .wallet-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .card-header.inline {

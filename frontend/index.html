@@ -21,9 +21,9 @@
         <div class="hero-copy">
           <span class="eyebrow">Ethereum testnet crowdfunding</span>
           <h1>Charity Crowdfunding</h1>
-          <p>
+          <p id="networkCopy">
             Create campaigns, fund meaningful goals, and earn CRWD reward tokens
-            for every contribution. Built for Sepolia testnet.
+            for every contribution. Built for the configured Ethereum test network.
           </p>
           <div class="contract-line">
             <span class="label">Crowdfunding</span>
@@ -37,7 +37,12 @@
         <div class="wallet-card">
           <div class="wallet-header">
             <h2>Wallet</h2>
-            <button id="connectBtn" class="btn primary">Connect MetaMask</button>
+            <div class="wallet-actions">
+              <button id="connectBtn" class="btn primary">Connect MetaMask</button>
+              <button id="switchNetworkBtn" class="btn ghost">
+                Switch Network
+              </button>
+            </div>
           </div>
           <div class="wallet-grid">
             <div class="wallet-row">
@@ -58,7 +63,7 @@
             </div>
           </div>
           <p class="wallet-note" id="walletNote">
-            Connect MetaMask on Sepolia to create or fund campaigns.
+            Connect MetaMask on the configured test network to create or fund campaigns.
           </p>
         </div>
       </header>

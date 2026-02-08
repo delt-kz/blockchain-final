@@ -41,6 +41,7 @@ const state = {
 
 const elements = {
   connectBtn: document.getElementById("connectBtn"),
+  switchNetworkBtn: document.getElementById("switchNetworkBtn"),
   createForm: document.getElementById("createForm"),
   refreshBtn: document.getElementById("refreshBtn"),
   titleInput: document.getElementById("titleInput"),
@@ -53,6 +54,7 @@ const elements = {
   ethBalance: document.getElementById("ethBalance"),
   tokenBalance: document.getElementById("tokenBalance"),
   walletNote: document.getElementById("walletNote"),
+  networkCopy: document.getElementById("networkCopy"),
   crowdfundingAddress: document.getElementById("crowdfundingAddress"),
   tokenAddress: document.getElementById("tokenAddress"),
 };
@@ -111,6 +113,26 @@ async function ensureProvider() {
   return true;
 }
 
+function getExpectedNetworkLabel() {
+  if (!state.config?.chainId) return "the configured test network";
+  return NETWORKS[state.config.chainId] || `Chain ${state.config.chainId}`;
+}
+
+function updateNetworkCopy() {
+  if (!elements.networkCopy) return;
+  const expected = getExpectedNetworkLabel();
+  elements.networkCopy.textContent =
+    "Create campaigns, fund meaningful goals, and earn CRWD reward tokens " +
+    `for every contribution. Built for ${expected}.`;
+}
+
+function updateConnectButton() {
+  if (!elements.connectBtn) return;
+  elements.connectBtn.textContent = state.account
+    ? "Change Account"
+    : "Connect MetaMask";
+}
+
 function isSupportedNetwork(chainId) {
   if (!state.config?.chainId) return false;
   return Number(chainId) === Number(state.config.chainId);
@@ -124,14 +146,60 @@ async function connectWallet() {
     if (accounts.length) {
       state.account = accounts[0];
       state.signer = await state.provider.getSigner();
+      updateConnectButton();
       await refreshNetwork();
       await hydrateContracts();
       await refreshWallet();
       await loadCampaigns();
-      clearStatus();
+      if (state.networkOk) {
+        clearStatus();
+      }
     }
   } catch (error) {
     handleError(error, "Connection rejected.");
+  }
+}
+
+async function requestAccountSwitch() {
+  try {
+    await window.ethereum.request({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+    await connectWallet();
+  } catch (error) {
+    handleError(error, "Account switch cancelled.");
+  }
+}
+
+async function handleConnectClick() {
+  if (!state.account) {
+    await connectWallet();
+    return;
+  }
+  await requestAccountSwitch();
+}
+
+async function switchNetwork() {
+  if (!state.config?.chainId) {
+    setStatus("No network configured in contracts.json.", "warning");
+    return;
+  }
+  const chainIdHex = `0x${Number(state.config.chainId).toString(16)}`;
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chainIdHex }],
+    });
+  } catch (error) {
+    if (error?.code === 4902) {
+      setStatus(
+        `Please add ${getExpectedNetworkLabel()} to MetaMask manually.`,
+        "warning"
+      );
+      return;
+    }
+    handleError(error, "Network switch failed.");
   }
 }
 
@@ -143,16 +211,15 @@ async function refreshNetwork() {
   elements.networkName.textContent = label;
 
   if (!isSupportedNetwork(chainId)) {
-    const expected = NETWORKS[state.config.chainId] || state.config.chainId;
+    const expected = getExpectedNetworkLabel();
     setStatus(`Wrong network. Please switch to ${expected}.`, "warning");
-    elements.walletNote.textContent = "Switch network to use this DApp.";
+    elements.walletNote.textContent = `Switch MetaMask to ${expected} to use this DApp.`;
     state.networkOk = false;
     toggleActions(false);
     return false;
   }
 
-  elements.walletNote.textContent =
-    "Connected to the correct network. Ready to create and fund campaigns.";
+  elements.walletNote.textContent = `Connected to ${getExpectedNetworkLabel()}. Ready to create and fund campaigns.`;
   state.networkOk = true;
   toggleActions(true);
   return true;
@@ -204,6 +271,11 @@ async function refreshWallet() {
   }
 
   elements.walletAddress.textContent = shortenAddress(state.account);
+  if (!state.networkOk) {
+    elements.ethBalance.textContent = "-";
+    elements.tokenBalance.textContent = "-";
+    return;
+  }
   const [ethBalance, tokenBalance] = await Promise.all([
     state.provider.getBalance(state.account),
     state.contracts.token.balanceOf(state.account),
@@ -283,6 +355,7 @@ async function finalizeCampaign(campaignId) {
     const tx = await state.contracts.crowdfunding.finalize(campaignId);
     await tx.wait();
     setStatus("Campaign finalized.", "success");
+    await refreshWallet();
     await loadCampaigns();
   } catch (error) {
     handleError(error, "Finalize failed.");
@@ -294,6 +367,11 @@ async function loadCampaigns() {
   elements.campaigns.innerHTML = "";
 
   try {
+    if (!state.networkOk) {
+      const expected = getExpectedNetworkLabel();
+      elements.campaigns.innerHTML = `<p class="mono">Switch MetaMask to ${expected} to view campaigns.</p>`;
+      return;
+    }
     const total = await state.contracts.crowdfunding.nextCampaignId();
     const count = Number(total);
     if (count === 0) {
@@ -386,8 +464,10 @@ async function init() {
     if (!providerReady) return;
 
     state.config = await loadConfig();
+    updateNetworkCopy();
     await refreshNetwork();
     await hydrateContracts();
+    updateConnectButton();
 
     const accounts = await window.ethereum.request({
       method: "eth_accounts",
@@ -395,18 +475,21 @@ async function init() {
     if (accounts.length) {
       state.account = accounts[0];
       state.signer = await state.provider.getSigner();
+      updateConnectButton();
       await refreshWallet();
     }
 
     await loadCampaigns();
 
-    elements.connectBtn.addEventListener("click", connectWallet);
+    elements.connectBtn.addEventListener("click", handleConnectClick);
+    elements.switchNetworkBtn?.addEventListener("click", switchNetwork);
     elements.createForm.addEventListener("submit", createCampaign);
     elements.refreshBtn.addEventListener("click", loadCampaigns);
 
     window.ethereum.on("accountsChanged", async (accounts) => {
       state.account = accounts[0] || null;
       state.signer = state.account ? await state.provider.getSigner() : null;
+      updateConnectButton();
       await hydrateContracts();
       await refreshWallet();
       await loadCampaigns();

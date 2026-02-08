@@ -8,7 +8,7 @@ contract CharityCrowdfunding {
         string title;
         address payable creator;
         uint256 goalWei;
-        uint256 deadline; // unix timestamp
+        uint256 deadline;
         uint256 raisedWei;
         bool finalized;
     }
@@ -16,10 +16,8 @@ contract CharityCrowdfunding {
     RewardToken public rewardToken;
     uint256 public nextCampaignId;
 
-    // campaignId => Campaign
     mapping(uint256 => Campaign) public campaigns;
 
-    // campaignId => contributor => amountWei
     mapping(uint256 => mapping(address => uint256)) public contributions;
 
     event CampaignCreated(
@@ -80,8 +78,6 @@ contract CharityCrowdfunding {
         c.raisedWei += msg.value;
         contributions[campaignId][msg.sender] += msg.value;
 
-        // Reward rate: 100 tokens per 1 ETH donated
-        // ERC20 has 18 decimals, so we mint: msg.value * 100
         uint256 reward = msg.value * 100;
 
         rewardToken.mint(msg.sender, reward);
@@ -101,12 +97,9 @@ contract CharityCrowdfunding {
         bool goalReached = c.raisedWei >= c.goalWei;
 
         if (goalReached) {
-            // send funds to creator
             (bool ok, ) = c.creator.call{value: c.raisedWei}("");
             require(ok, "Transfer failed");
         }
-        // if goal not reached: funds remain in contract (для простоты требований)
-        // (если захотим, добавим refund позже)
 
         emit Finalized(campaignId, goalReached, c.raisedWei);
     }
@@ -127,4 +120,31 @@ contract CharityCrowdfunding {
         require(c.creator != address(0), "Campaign not found");
         return (c.title, c.creator, c.goalWei, c.deadline, c.raisedWei, c.finalized);
     }
+
+    function withdrawRefund(uint256 campaignId) external {
+        Campaign storage c = campaigns[campaignId];
+
+        require(c.creator != address(0), "Campaign not found");
+        require(c.finalized, "Not finalized");
+
+        bool goalReached = c.raisedWei >= c.goalWei;
+        require(!goalReached, "Campaign successful");
+
+        uint256 amount = contributions[campaignId][msg.sender];
+        require(amount > 0, "Nothing to refund");
+
+        contributions[campaignId][msg.sender] = 0;
+
+        (bool ok, ) = payable(msg.sender).call{value: amount}("");
+        require(ok, "Refund failed");
+    }
+
+    function refundableAmount(uint256 campaignId, address user) external view returns (uint256) {
+        Campaign storage c = campaigns[campaignId];
+        if (c.creator == address(0)) return 0;
+        if (!c.finalized) return 0;
+        if (c.raisedWei >= c.goalWei) return 0;
+        return contributions[campaignId][user];
+    }
+
 }

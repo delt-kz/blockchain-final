@@ -2,11 +2,11 @@
   "network": "sepolia",
   "chainId": 11155111,
   "rewardToken": {
-    "address": "0x07ECfa40d0F9D58957781B5f8Fe9A485EeeD1e43",
+    "address": "0xD9F90571bE945643cE041840bA24033C3BC8F7a1",
     "artifactPath": "artifacts/contracts/RewardToken.sol/RewardToken.json"
   },
   "crowdfunding": {
-    "address": "0x3Fd0A0D2818C362428F3fB72db5ffCF29ad1577e",
+    "address": "0x5D53b80DeDbcAc0387C00d3d3f84d3d2687aaA04",
     "artifactPath": "artifacts/contracts/CharityCrowdfunding.sol/CharityCrowdfunding.json"
   }
 }

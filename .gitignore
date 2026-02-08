@@ -1,30 +1,41 @@
-# Node modules
-/node_modules
+# Dependencies
+node_modules/
+package-lock.json
 
-# Compilation output
-/dist
+# Environment variables (секреты, приватные ключи)
+.env
+.env.local
+.env.*.local
 
-# pnpm deploy output
-/bundle
+# Hardhat
+artifacts/
+cache/
+coverage/
 
-# Hardhat Build Artifacts
-/artifacts
+# TypeScript/TypeChain
+types/
+typechain-types/
+dist/
+build/
 
-# Hardhat compilation (v2) support directory
-/cache
+# Logs
+*.log
+logs/
 
-# Typechain output
-/types
+# OS files
+.DS_Store
+Thumbs.db
 
-# Hardhat coverage reports
-/coverage
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Contract artifacts in root
+# Contract artifacts в корне (после деплоя)
 CharityCrowdfunding.json
 RewardToken.json
-*.json
-!package.json
-!package-lock.json
-!tsconfig.json
 
-.env
+# Temporary files
+*.tmp
+.temp/
