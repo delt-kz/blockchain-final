@@ -42,7 +42,7 @@ If you prefer to run services separately:
 npx hardhat node
 
 # Terminal 2: Deploy contracts
-npx hardhat run scripts/deploy.ts --network localhost
+npx hardhat run scripts/deploy.ts --network sepolia
 
 # Terminal 3: Update frontend/contracts.json with addresses, then:
 npx http-server frontend -p 8000
