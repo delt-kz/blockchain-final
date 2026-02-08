@@ -53,6 +53,7 @@ const elements = {
   ethBalance: document.getElementById("ethBalance"),
   tokenBalance: document.getElementById("tokenBalance"),
   walletNote: document.getElementById("walletNote"),
+  networkCopy: document.getElementById("networkCopy"),
   crowdfundingAddress: document.getElementById("crowdfundingAddress"),
   tokenAddress: document.getElementById("tokenAddress"),
 };
@@ -111,6 +112,19 @@ async function ensureProvider() {
   return true;
 }
 
+function getExpectedNetworkLabel() {
+  if (!state.config?.chainId) return "the configured test network";
+  return NETWORKS[state.config.chainId] || `Chain ${state.config.chainId}`;
+}
+
+function updateNetworkCopy() {
+  if (!elements.networkCopy) return;
+  const expected = getExpectedNetworkLabel();
+  elements.networkCopy.textContent =
+    "Create campaigns, fund meaningful goals, and earn CRWD reward tokens " +
+    `for every contribution. Built for ${expected}.`;
+}
+
 function isSupportedNetwork(chainId) {
   if (!state.config?.chainId) return false;
   return Number(chainId) === Number(state.config.chainId);
@@ -128,7 +142,9 @@ async function connectWallet() {
       await hydrateContracts();
       await refreshWallet();
       await loadCampaigns();
-      clearStatus();
+      if (state.networkOk) {
+        clearStatus();
+      }
     }
   } catch (error) {
     handleError(error, "Connection rejected.");
@@ -143,16 +159,15 @@ async function refreshNetwork() {
   elements.networkName.textContent = label;
 
   if (!isSupportedNetwork(chainId)) {
-    const expected = NETWORKS[state.config.chainId] || state.config.chainId;
+    const expected = getExpectedNetworkLabel();
     setStatus(`Wrong network. Please switch to ${expected}.`, "warning");
-    elements.walletNote.textContent = "Switch network to use this DApp.";
+    elements.walletNote.textContent = `Switch MetaMask to ${expected} to use this DApp.`;
     state.networkOk = false;
     toggleActions(false);
     return false;
   }
 
-  elements.walletNote.textContent =
-    "Connected to the correct network. Ready to create and fund campaigns.";
+  elements.walletNote.textContent = `Connected to ${getExpectedNetworkLabel()}. Ready to create and fund campaigns.`;
   state.networkOk = true;
   toggleActions(true);
   return true;
@@ -204,6 +219,11 @@ async function refreshWallet() {
   }
 
   elements.walletAddress.textContent = shortenAddress(state.account);
+  if (!state.networkOk) {
+    elements.ethBalance.textContent = "-";
+    elements.tokenBalance.textContent = "-";
+    return;
+  }
   const [ethBalance, tokenBalance] = await Promise.all([
     state.provider.getBalance(state.account),
     state.contracts.token.balanceOf(state.account),
@@ -283,6 +303,7 @@ async function finalizeCampaign(campaignId) {
     const tx = await state.contracts.crowdfunding.finalize(campaignId);
     await tx.wait();
     setStatus("Campaign finalized.", "success");
+    await refreshWallet();
     await loadCampaigns();
   } catch (error) {
     handleError(error, "Finalize failed.");
@@ -294,6 +315,11 @@ async function loadCampaigns() {
   elements.campaigns.innerHTML = "";
 
   try {
+    if (!state.networkOk) {
+      const expected = getExpectedNetworkLabel();
+      elements.campaigns.innerHTML = `<p class="mono">Switch MetaMask to ${expected} to view campaigns.</p>`;
+      return;
+    }
     const total = await state.contracts.crowdfunding.nextCampaignId();
     const count = Number(total);
     if (count === 0) {
@@ -386,6 +412,7 @@ async function init() {
     if (!providerReady) return;
 
     state.config = await loadConfig();
+    updateNetworkCopy();
     await refreshNetwork();
     await hydrateContracts();
 
