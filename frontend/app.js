@@ -559,6 +559,7 @@ async function init() {
       state.account = accounts[0];
       state.signer = await state.provider.getSigner();
       updateConnectButton();
+      await hydrateContracts();
       await refreshWallet();
     }
 
@@ -580,6 +581,7 @@ async function init() {
 
     window.ethereum.on("chainChanged", async () => {
       await refreshNetwork();
+      state.signer = state.account ? await state.provider.getSigner() : null;
       await hydrateContracts();
       await refreshWallet();
       await loadCampaigns();
