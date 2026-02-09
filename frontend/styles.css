@@ -110,6 +110,37 @@ body {
   font-size: 0.9rem;
 }
 
+.demo-checklist {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.demo-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-checklist li::before {
+  content: "o";
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.demo-checklist li.done {
+  color: var(--success);
+}
+
+.demo-checklist li.done::before {
+  content: "x";
+  color: var(--success);
+}
+
 .badge {
   padding: 4px 10px;
   border-radius: 999px;
@@ -227,6 +258,29 @@ body {
   border: 1px solid var(--stroke);
   display: grid;
   gap: 12px;
+}
+
+.campaign-card.demo {
+  position: relative;
+  opacity: 0.95;
+}
+
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(30, 26, 20, 0.12);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.demo-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 6px;
 }
 
 .campaign-title {

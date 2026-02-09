@@ -33,6 +33,7 @@ const state = {
   networkOk: false,
   config: null,
   contracts: {},
+  ethBalanceWei: null,
   tokenMeta: {
     decimals: 18,
     symbol: "CRWD",
@@ -55,6 +56,7 @@ const elements = {
   tokenBalance: document.getElementById("tokenBalance"),
   walletNote: document.getElementById("walletNote"),
   networkCopy: document.getElementById("networkCopy"),
+  demoChecklist: document.getElementById("demoChecklist"),
   crowdfundingAddress: document.getElementById("crowdfundingAddress"),
   tokenAddress: document.getElementById("tokenAddress"),
 };
@@ -124,6 +126,25 @@ function updateNetworkCopy() {
   elements.networkCopy.textContent =
     "Create campaigns, fund meaningful goals, and earn CRWD reward tokens " +
     `for every contribution. Built for ${expected}.`;
+}
+
+function updateDemoChecklist() {
+  const list = elements.demoChecklist;
+  if (!list) return;
+  const walletDone = Boolean(state.account);
+  const networkDone = Boolean(state.networkOk);
+  const ethDone = state.ethBalanceWei ? state.ethBalanceWei > 0n : false;
+
+  list.querySelectorAll("[data-step]").forEach((item) => {
+    const step = item.getAttribute("data-step");
+    if (step === "wallet") {
+      item.classList.toggle("done", walletDone);
+    } else if (step === "network") {
+      item.classList.toggle("done", networkDone);
+    } else if (step === "eth") {
+      item.classList.toggle("done", ethDone);
+    }
+  });
 }
 
 function updateConnectButton() {
@@ -216,12 +237,14 @@ async function refreshNetwork() {
     elements.walletNote.textContent = `Switch MetaMask to ${expected} to use this DApp.`;
     state.networkOk = false;
     toggleActions(false);
+    updateDemoChecklist();
     return false;
   }
 
   elements.walletNote.textContent = `Connected to ${getExpectedNetworkLabel()}. Ready to create and fund campaigns.`;
   state.networkOk = true;
   toggleActions(true);
+  updateDemoChecklist();
   return true;
 }
 
@@ -267,6 +290,8 @@ async function refreshWallet() {
     elements.walletAddress.textContent = "-";
     elements.ethBalance.textContent = "-";
     elements.tokenBalance.textContent = "-";
+    state.ethBalanceWei = null;
+    updateDemoChecklist();
     return;
   }
 
@@ -274,14 +299,18 @@ async function refreshWallet() {
   if (!state.networkOk) {
     elements.ethBalance.textContent = "-";
     elements.tokenBalance.textContent = "-";
+    state.ethBalanceWei = null;
+    updateDemoChecklist();
     return;
   }
   const [ethBalance, tokenBalance] = await Promise.all([
     state.provider.getBalance(state.account),
     state.contracts.token.balanceOf(state.account),
   ]);
+  state.ethBalanceWei = ethBalance;
   elements.ethBalance.textContent = `${formatEth(ethBalance)} ETH`;
   elements.tokenBalance.textContent = formatToken(tokenBalance);
+  updateDemoChecklist();
 }
 
 async function createCampaign(event) {
@@ -375,8 +404,55 @@ async function loadCampaigns() {
     const total = await state.contracts.crowdfunding.nextCampaignId();
     const count = Number(total);
     if (count === 0) {
-      elements.campaigns.innerHTML =
-        '<p class="mono">No campaigns yet. Create the first one.</p>';
+      elements.campaigns.innerHTML = `
+        <div class="demo-note mono">Demo preview (not on-chain)</div>
+        <div class="campaign-card demo">
+          <div class="campaign-title">
+            Clean Water Drive
+            <span class="demo-badge">Demo</span>
+          </div>
+          <div class="campaign-meta">
+            <div><strong>Creator:</strong> 0x1234...BEEF</div>
+            <div><strong>Goal:</strong> 5.0000 ETH</div>
+            <div><strong>Raised:</strong> 1.2500 ETH</div>
+            <div><strong>Deadline:</strong> 2026-02-28 18:00</div>
+            <div><strong>Status:</strong> Active</div>
+            <div><strong>Your contribution:</strong> 0.0000 ETH</div>
+          </div>
+          <div class="progress"><span style="width: 25%;"></span></div>
+          <div class="campaign-actions">
+            <label class="field">
+              <span>Contribute (ETH)</span>
+              <input type="number" min="0.001" step="0.001" placeholder="0.05" disabled />
+            </label>
+            <button class="btn primary" disabled>Contribute</button>
+            <button class="btn ghost" disabled>Finalize</button>
+          </div>
+        </div>
+        <div class="campaign-card demo">
+          <div class="campaign-title">
+            Student Relief Fund
+            <span class="demo-badge">Demo</span>
+          </div>
+          <div class="campaign-meta">
+            <div><strong>Creator:</strong> 0x9a9a...C0DE</div>
+            <div><strong>Goal:</strong> 2.0000 ETH</div>
+            <div><strong>Raised:</strong> 2.0000 ETH</div>
+            <div><strong>Deadline:</strong> 2026-02-10 12:00</div>
+            <div><strong>Status:</strong> Ended</div>
+            <div><strong>Your contribution:</strong> 0.2000 ETH</div>
+          </div>
+          <div class="progress"><span style="width: 100%;"></span></div>
+          <div class="campaign-actions">
+            <label class="field">
+              <span>Contribute (ETH)</span>
+              <input type="number" min="0.001" step="0.001" placeholder="0.05" disabled />
+            </label>
+            <button class="btn primary" disabled>Contribute</button>
+            <button class="btn ghost" disabled>Finalize</button>
+          </div>
+        </div>
+      `;
       return;
     }
 
@@ -449,8 +525,14 @@ async function loadCampaigns() {
 }
 
 function handleError(error, fallbackMessage) {
-  if (error?.code === 4001) {
-    setStatus("Transaction rejected in MetaMask.", "warning");
+  const rawMessage = `${error?.shortMessage || error?.message || ""}`.toLowerCase();
+  const isUserRejected =
+    error?.code === 4001 ||
+    rawMessage.includes("user rejected") ||
+    rawMessage.includes("rejected the request") ||
+    rawMessage.includes("denied transaction signature");
+  if (isUserRejected) {
+    clearStatus();
     return;
   }
   const message =
@@ -468,6 +550,7 @@ async function init() {
     await refreshNetwork();
     await hydrateContracts();
     updateConnectButton();
+    updateDemoChecklist();
 
     const accounts = await window.ethereum.request({
       method: "eth_accounts",
